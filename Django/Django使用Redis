@@ -14,4 +14,6 @@ Django使用Redis
 .视图缓存
 .模板片段缓存
 
+三、安装
+1.安装django-redis
 
