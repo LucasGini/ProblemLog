@@ -29,3 +29,40 @@ urlpatterns = [
     ...
     url(r'^api-auth/', include('rest_framework.urls'))
 ]
+
+4.django.url配置序列序化类
+示例：
+from django.contrib.auth.models import User
+from jobs.models import Job
+from rest_framework import routers, serializers, viewsets
+
+
+class UserSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = User
+        fields = ['url', 'username', 'email', 'in_staff']
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+
+class JobSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = Job
+        fields = '__all__'
+
+
+class JobViewSet(viewsets.ModelViewSet):
+    queryset = Job.objects.all()
+    serializer_class = JobSerializer
+
+
+router = routers.DefaultRouter()
+router.register(r'users', UserViewSet)
+router.register(r'jobs', JobViewSet)
+
+urlpatterns = [
+    path('api/', include(router.urls)),
+    ]
