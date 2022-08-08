@@ -32,3 +32,12 @@ CACHES = {
         }
     }
 }
+
+3. django.settings配置整站缓存
+MIDDLEWARE = [
+    ...
+    'django.middleware.cache.UpdateCacheMiddleware',    # 整站缓存
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.cache.FetchFromCacheMiddleware',  # 整站缓存
+    ...
+]
