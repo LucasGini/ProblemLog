@@ -18,6 +18,10 @@ Django使用Redis
 1.安装django-redis
 pip install django-redis
 
+2.本机安装Redis客户端
+本机安装并启动Redis服务
+参考Redis模块安装
+
 2.django.settings配置
 # Redis配置
 CACHES = {
