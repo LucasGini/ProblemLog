@@ -1,0 +1,34 @@
+Django与Celery的集成
+
+一、Celery的使用
+
+1.什么是Celery？
+    .一个分布式的任务队列
+        .简单：几行代码可以创建一个简单的Celery任务
+        .高可用：工作机会自动重试
+        .快速：可以执行一分钟上百万任务
+        .灵活：每一块都可以扩展
+        
+    示例：
+    from celery import Celery
+    
+    app Celery('hello', broker='amqp://guest@localhost//')
+    
+    @app.task
+    def hello()
+        return 'hello world'
+        
+2.Celery使用场景
+    .大量需要使用异步任务的场景
+        .发送电子邮件，发送IM消息通知
+        .爬取网页，数据分析
+        .图像、视频处理
+        .生成报告，深度学习
+        
+3.搭建Celery环境
+
+(1)下载Celery包
+    pip install -U Celery
+
+(2)安装依赖包
+    pip install "celery[redis,auth,msgpack]"
