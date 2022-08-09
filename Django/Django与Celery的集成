@@ -71,6 +71,92 @@ Django与Celery的集成
 
 2.启动服务
     celery -A tasks flower --broker=redis://@localhost:6379/0
+    
+三、Django与Celery集成
+
+1.在项目的主应用下创建celery.py
+    编辑代码：
+    from __future__ import absolute_import, unicode_literals
+
+    import os
+    
+    from celery import Celery
+    # 定义配置文件
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'settings.base')
+    # 直接使用项目名称作为celery的名称
+    app = Celery('recruitment')
+    # 指定从django的配置文件中读取配置文件
+    app.config_from_object('django.conf:settings', namespace='CELERY')
+    
+    # 自动从加载的各个app目录下寻找tasks.py的脚本，然后把tasks.py里面所有的任务
+    # 都加载到系统里面，让我们的系统可以运行他
+    app.autodiscover_tasks()
+    
+    # task示例
+    @app.task(bind=True)
+    def debug_task(self):
+        print('Request: {0!r}'.format(self.request))
+        
+2.在项目主应用的_init__.py文件输入：# 作用：应用启动的时候能够加载Celery的环境
+
+    from __future__ import absolute_import, unicode_literals  # 防止包有命名冲突
+
+    from .celery import app as celery_app # 导入APP
+
+    __all__ = ('celery_app',) #把app暴露出去
+
+3.在django.setting文件进行配置
+    # Celery application definition
+    CELERY_BROKER_URL = 'redis://localhost:6379/0'
+    CELERY_RESULT_BACKEND = 'redis://localhost:6379/1'
+    CELERY_ACCEPT_CONTENT = ['application/json']
+    CELERY_RESULT_SERIALIZER = 'json'
+    CELERY_TASK_SERIALIZER = 'json'
+    CELERY_TIMEZONE = 'Asia/Shanghai'
+    CELERYD_MAX_TASK_PER_CHILD = 10
+    CELERYD_LOG_FILE = os.path.join(BASE_DIR, 'logs', 'celery_work.log')
+    CELERYBEAT_LOG_FILE = os.path.join(BASE_DIR, 'logs', 'celery_beat.log')
+    
+4.启动Redis
+
+5.启动Celery
+
+    linux系统: DJANGO_SETTINGS_MODULE=settings.local celery --app recruitment worker -l info -P eventlet
+    windows系统：set  DJANGO_SETTINGS_MODULE=settings.local
+                celery --app recruitment worker -l info -P eventlet
+
+6.启动flower监控服务
+    linux系统：DJANGO_SETTINGS_MODULE=settings.local celery --app recruitment flower --broker=redis://localhost:6379/0
+    windows系统：set  DJANGO_SETTINGS_MODULE=settings.local
+                celery --app recruitment flower --broker=redis://localhost:6379/0
+                
+四、异步任务
+
+1.在应用目录下创建一个tasks.py
+    from __future__ import absolute_import, unicode_literals
+
+    from celery import shared_task
+    from .dingtalk import send
+    
+    
+    # 异步任务
+    @shared_task
+    def sen_dingtalk_message(message):
+        send(message)
+        
+2.在代码中调用任务
+    from .tasks import sen_dingtalk_message
+    def notify_interviewer(modelamin, request, queryset):
+    candidates = ""
+    interviewer = ""
+    for obj in queryset:
+        candidates = obj.username + ";" + candidates
+        interviewer = obj.first_interviewer_user.useraname + ";" + interviewer
+    sen_dingtalk_message.delay("候选人%s 进入面试环节，亲爱的面试官，请准备好面试： %s" % (candidates, interviewer)) # delay()延迟调用
+    messages.add_message(request, messages.INFO, '已经成功发送面试通知')
+
+
+    
 
 windows系统遇到的问题
 (1)执行任务队列报错
