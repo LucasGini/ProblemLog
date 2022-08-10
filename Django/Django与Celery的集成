@@ -156,7 +156,69 @@ Django与Celery的集成
     messages.add_message(request, messages.INFO, '已经成功发送面试通知')
 
 
+五、定时任务
+    .任务心跳管理进程-Beat
+    .任务调度器.
+        .PersistentScheduler
+        .DatabaseScheduler
+    .任务存储
+        .File Configuration
+        .Database
+        
+1.安装beat：
+    pip install django-celery-beat
     
+2.数据库变更
+
+3.使用DatabaseScheduler启动beat或者在配置中设置beat_scheduler
+
+4.启动beat进程
+    linux系统：DJANGO_SETTINGS_MODULE=settings.local celery --app recruitment beat --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    windows系统：set  DJANGO_SETTINGS_MODULE=settings.local
+                celery --app recruitment beat --scheduler django_celery_beat.schedulers:DatabaseScheduler
+
+5.管理定时任务的方法
+    .在Admin后台添加管理定时任务
+        登录django管理后台
+        Periodic Tasks 管理配置任务
+    
+    .系统启动时自动注册定时任务
+        在主应用下的celery.py文件添加代码
+        from celery.schedules import crontab
+        @app.on_after_configure.connect # 系统启动完成后再去执行这个方法
+        def setup_periodic_tasks(sender, **kwargs):
+            # 添加定时任务 每10秒运行一次
+            sender.add_periodic_task(10.0, test.s('hello'), neme='hello every 10')
+            # 添加定时任务 每30秒运行一次
+            sender.add_periodic_task(30.0, test.s('hello'), expires=10)
+            # 添加定时任务 每周一7点30分运行一次
+            sender.add_periodic_task(
+                crontab(hour=7, minute=20, day_of_week=1),  # crontab表达式
+                test.s('Happy Mondays!'),
+            )
+        @app.task
+        def test(arg):
+            print(arg)
+
+    .直接设置应用的beat_schedule
+        在主应用下的celery.py文件添加代码
+            # 注意下面引用的tasks.add的方法，必须显示import，才能正确注册
+                from recruitment.tasks import add
+                app.conf.beat_schedule = {
+                    'add-every-10-seconds': {
+                        'task': 'recruitment.tasks,add',
+                        'schedule': 10.0,
+                        'args': (16, 4,)
+                    }
+                }
+    .运行时添加定时任务
+        import json
+        from django_celery_beat.models import PeriodicTask, IntervalSchedule
+        # 创建定时策略
+        schedule, created = IntervalSchedule.objects.get_or_create(every=10, period=IntervalSchedule.SECONDS)
+        # 再创建任务
+        task = PeriodicTask.objects.create(interval=schedule, name='say welcome', task='recruitment.celery.test', args=json.dumps(['welcome']))
+
 
 windows系统遇到的问题
 (1)执行任务队列报错
